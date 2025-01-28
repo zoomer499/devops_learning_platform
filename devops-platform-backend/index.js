@@ -50,6 +50,33 @@ app.get('/courses', async (req, res) => {
   }
 });
 
+app.get('/courses/:courseId/lessons', async (req, res) => {
+    const { courseId } = req.params;
+    try {
+      const result = await pool.query('SELECT * FROM lessons WHERE course_id = $1', [courseId]);
+      res.status(200).json(result.rows);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+app.get('/lessons/:lessonId', async (req, res) => {
+    const { lessonId } = req.params;
+    try {
+      const lessonResult = await pool.query('SELECT * FROM lessons WHERE id = $1', [lessonId]);
+      const materialsResult = await pool.query('SELECT * FROM materials WHERE lesson_id = $1', [lessonId]);
+  
+      const lesson = lessonResult.rows[0];
+      if (lesson) {
+        lesson.materials = materialsResult.rows;
+      }
+  
+      res.status(200).json(lesson);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
 // Запуск сервера
 const PORT = 5001;
 app.listen(PORT, () => {
