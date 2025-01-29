@@ -16,6 +16,30 @@ const pool = new Pool({
   port: 5432,
 });
 
+
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+      const user = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+      if (user.rows.length === 0) {
+        console.error(`User not found: ${email}`);
+        return res.status(401).json({ error: 'Пользователь не найден' });
+      }
+  
+      const isValidPassword = await bcrypt.compare(password, user.rows[0].password_hash);
+      if (!isValidPassword) {
+        console.error(`Invalid password for: ${email}`);
+        return res.status(401).json({ error: 'Неверный пароль' });
+      }
+  
+      const token = jwt.sign({ userId: user.rows[0].id }, 'your-secret-key', { expiresIn: '1h' });
+      res.status(200).json({ token });
+    } catch (err) {
+      console.error(`Login error: ${err.message}`);
+      res.status(500).json({ error: 'Ошибка сервера' });
+    }
+  });
+
 // Регистрация пользователя
 app.post('/register', async (req, res) => {
     const { username, email, password } = req.body;
